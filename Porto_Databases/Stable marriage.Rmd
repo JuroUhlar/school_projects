@@ -1,0 +1,98 @@
+---
+title: "Databases: Stable marriage problem"
+author: "Juraj Uhlar"
+date: "9/25/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Stable marriage problem
+
+
+```{r}
+
+# 10 x 10 dataset
+
+males <- c("abe", "bob", "col", "dan", "ed", "fred", "gav", "hal", "ian", "jon")
+females <-  c("abi", "bea", "cath", "dee", "eve", "fay", "gay", "hope", "ivy", "jan")
+
+m.prefs <- as.matrix(data.frame(abe = c("abi", "eve", "cath", "ivy", "jan", "dee", "fay", "bea", "hope", "gay"),
+    bob = c("cath", "hope", "abi", "dee", "eve", "fay", "bea", "jan", "ivy", "gay"),
+    col = c("hope", "eve", "abi", "dee", "bea", "fay", "ivy", "gay", "cath", "jan"),
+    dan = c("ivy", "fay", "dee", "gay", "hope", "eve", "jan", "bea", "cath", "abi"),
+    ed = c("jan", "dee", "bea", "cath", "fay", "eve", "abi", "ivy", "hope", "gay"),
+    fred = c("bea", "abi", "dee", "gay", "eve", "ivy", "cath", "jan", "hope", "fay"),
+    gav = c("gay", "eve", "ivy", "bea", "cath", "abi", "dee", "hope", "jan", "fay"),
+    hal = c("abi", "eve", "hope", "fay", "ivy", "cath", "jan", "bea", "gay", "dee"),
+    ian = c("hope", "cath", "dee", "gay", "bea", "abi", "fay", "ivy", "jan", "eve"),
+    jon = c("abi", "fay", "jan", "gay", "eve", "bea", "dee", "cath", "ivy", "hope")))
+
+
+f.prefs <- as.matrix(data.frame(abi = c("bob", "fred", "jon", "gav", "ian", "abe", "dan", "ed", "col", "hal"),
+    bea = c("bob", "abe", "col", "fred", "gav", "dan", "ian", "ed", "jon", "hal"),
+    cath = c("fred", "bob", "ed", "gav", "hal", "col", "ian", "abe", "dan", "jon"),
+    dee = c("fred", "jon", "col", "abe", "ian", "hal", "gav", "dan", "bob", "ed"),
+    eve = c("jon", "hal", "fred", "dan", "abe", "gav", "col", "ed", "ian", "bob"),
+    fay = c("bob", "abe", "ed", "ian", "jon", "dan", "fred", "gav", "col", "hal"),
+    gay = c("jon", "gav", "hal", "fred", "bob", "abe", "col", "ed", "dan", "ian"),
+    hope = c("gav", "jon", "bob", "abe", "ian", "dan", "hal", "ed", "col", "fred"),
+    ivy = c("ian", "col", "hal", "gav", "fred", "bob", "abe", "ed", "jon", "dan"),
+    jan = c("ed", "hal", "gav", "abe", "bob", "jon", "col", "ian", "fred", "dan")))
+```
+
+
+
+
+```{r}
+# 3 x 3 dataset
+
+males <- c("Tom", "Bob", "Roman")
+females <-  c("Kate", "Ashley", "Sara")
+
+m.prefs <- data.frame(Tom = c("Kate", "Ashley", "Sara"),
+    Bob = c("Sara", "Kate", "Ashley"),
+    Roman = c("Sara", "Ashley", "Kate"))
+
+
+f.prefs <- data.frame(Kate = c("Roman", "Bob", "Tom"),
+    Ashley = c("Tom", "Roman", "Bob"),
+    Sara = c("Roman", "Bob", "Tom"))
+
+```
+
+```{r}
+
+m.results = as.matrix(data.frame(name = males,
+                engagedTo = c("", "", ""),
+                choiceIndex = c(1,1,1), row.names = males))
+
+
+#m.results["Tom",]$engagedTo
+
+
+for (x in males) {
+  choiceIndex = as.numeric(m.results[x, "choiceIndex"])
+  currentChoice = as.character(m.prefs[[x]][choiceIndex])
+  currentChoiceEngagement = m.results[m.results[, "engagedTo"] == currentChoice,"name"]
+  
+  
+  print(choiceIndex)
+  print(currentChoice)
+  if (length(currentChoiceEngagement) != 0) {
+    print(currentChoiceEngagement)
+    proposalAccepted = which(f.prefs[[currentChoice]] == x) < which(f.prefs[[currentChoice]] == currentChoiceEngagement)
+    print(proposalAccepted)
+    }
+  
+  m.results[x, "engagedTo"] = as.character(m.prefs[[x]][1])
+}
+
+# m.prefs[["Tom"]][1]
+# which(m.prefs$Tom == "Kate")
+# m.prefs$Tom[2]
+```
+
+
