@@ -74,20 +74,38 @@ m.results = as.matrix(data.frame(name = males,
 
 
 for (x in males) {
-  choiceIndex = as.numeric(m.results[x, "choiceIndex"])
-  currentChoice = as.character(m.prefs[[x]][choiceIndex])
-  currentChoiceEngagement = m.results[m.results[, "engagedTo"] == currentChoice,"name"]
-  
-  
-  print(choiceIndex)
-  print(currentChoice)
-  if (length(currentChoiceEngagement) != 0) {
-    print(currentChoiceEngagement)
-    proposalAccepted = which(f.prefs[[currentChoice]] == x) < which(f.prefs[[currentChoice]] == currentChoiceEngagement)
-    print(proposalAccepted)
+  # only men that are not yet engaged propose
+  if(m.results[x, "engagedTo"] == "") {
+    
+    # Get data from tables
+    choiceIndex = as.numeric(m.results[x, "choiceIndex"])
+    currentChoice = as.character(m.prefs[[x]][choiceIndex])
+    currentChoiceEngagement = m.results[m.results[, "engagedTo"] == currentChoice,"name"]
+    
+    print(paste0(x," proposes to ", currentChoice, ", his ", choiceIndex, ". choice."))
+
+    if (length(currentChoiceEngagement) == 0) {
+      # If choice is not engaged, she accepts the proposal
+      print(paste0(currentChoice," is not engaged and accepts the proposal from ", x, "."))
+      m.results[x, "engagedTo"] = currentChoice
     }
+    else {
+      
+      proposalAccepted = which(f.prefs[[currentChoice]] == x) < which(f.prefs[[currentChoice]] == currentChoiceEngagement)
+
+      if(proposalAccepted) {
+        m.results[currentChoiceEngagement, "engagedTo"] = "";
+        m.results[currentChoiceEngagement, "choiceIndex"] = as.numeric(m.results[currentChoiceEngagement, "choiceIndex"]) + 1
+        m.results[x, "engagedTo"] = currentChoice
+        
+        print(paste0(currentChoice," is engaged to ", currentChoiceEngagement, " but prefers ", x, " and accepts his proposal. ", currentChoiceEngagement, " is single again."))
+      } else {
+        print(paste0(currentChoice," is engaged to ", currentChoiceEngagement, "and rejects", x, "."))
+      }
+    }
+  }
   
-  m.results[x, "engagedTo"] = as.character(m.prefs[[x]][1])
+  cat("\n")
 }
 
 # m.prefs[["Tom"]][1]
