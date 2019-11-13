@@ -1,0 +1,508 @@
+---
+title: "Project"
+author: "Juraj Uhlar"
+date: "6/18/2019"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results = 'all', message = FALSE, warning = FALSE, fig.keep = 'last', cache = FALSE, error=TRUE)
+```
+
+## Reading data
+
+We begin by reading the data from a CSV file and processing it. We create a new variable `immigr_binary` which is a binary interpretation of the original 4-point scale `immigr` variable describing the subjects attitude towards immigration. `immigr_binary` is our target variable. We also turn some categorical, but numerically represented variables into factors for easier readability and make sure that factors are ordered correctly, where applicable.
+
+```{r framing}
+# Reads data
+framing = read.csv("framing.csv", header = T, sep = ",", dec = ".")
+
+# Makes sure there are no NAs (there are not)
+anyNA(framing)
+
+# Create news variable tracking attitude towards imigration as either generally positive or generally negative
+framing$immigr_binary = ifelse(framing$immigr >= 3, "Negative attitude", "Positive attitude")
+framing$immigr_binary = factor(framing$immigr_binary)
+
+# Turn numerical variables into factors where necessary
+framing$cond = factor(framing$cond, levels = c(1, 2, 3, 4),
+               labels = c("NegativeLatino", "NegativeEuropean", "PositiveLatino", "PositiveEuropean"))
+
+framing$tone = factor(framing$tone, levels = c(0, 1), labels = c("Positive", "Negative"))
+framing$eth = factor(framing$eth, levels = c(0, 1), labels = c("European", "Latino"))
+framing$treat = factor(framing$treat, levels = c(0, 1), labels = c("Other", "Negative Latino"))
+framing$anti_info = factor(framing$anti_info, levels = c(0, 1), labels = c("No", "Yes"))
+framing$cong_mesg = factor(framing$cong_mesg, levels = c(0, 1), labels = c("No", "Yes"))
+
+# Make ordered factors ordered
+framing$anx = factor(framing$anx, levels=c("not anxious at all", "a little anxious", "somewhat anxious", "very anxious"  ), ordered = TRUE)
+framing$educ = factor(framing$educ, levels=c("less than high school", "high school", "some college", "bachelor's degree or higher"), ordered = TRUE)
+framing$english = factor(framing$english, levels=c( "Strongly Oppose", "Oppose",  "Favor",  "Strongly Favor"), ordered = TRUE)
+
+# Looks at the final structure
+# str(framing)
+```
+
+
+## Exploratory data analysis
+
+We begin by looking at the disribution of each variable in the dataset, trying to spot skewed distribution or outliers that might affect the accuracy of our prediction models.
+
+#### Study conditions
+
+We can see that observations are roughly equally divided into four groups based on treatment (ethnicity and tone of presented information), as would be expected in scientific study.
+
+```{r fig.width = 8}
+barplot(table(framing$cond))
+```
+
+#### Attitude towards immigration
+
+Looking at the target variable, we can observe that most subjects hold a negative view towards immigration. Negative views outnumber positive ones more than 2:1.  
+
+```{r}
+barplot(table(framing$immigr_binary))
+barplot(table(framing$immigr))
+```
+
+#### Anxiety about immigration 
+
+Only 17 % of subjects are not anxious about immigration at all.
+
+```{r fig.width = 8}
+barplot(table(framing$anx))
+table(framing$anx)/nrow(framing)*100
+```
+
+#### Age
+
+Age of subjects approaches normal distribution. The youngest subject is 18, the oldest one is 85, with median subject age of 47 (mean is 48). No age group is significantly over- or under-represented.
+
+```{r fig.width = 8}
+summary(framing$age)
+hist(framing$age)
+```
+
+#### Gender
+
+The data shows a reasoble gender split of 52% women and 48% men.
+
+```{r}
+summary(framing$gender) / nrow(framing)
+```
+
+#### Education level
+
+Education level distribution seems reasonably reflective of American society at large with 31% of subjects holding a college degree and 8% of subjects not not having a high school diploma.
+
+```{r fig.width = 8}
+barplot(summary(framing$educ), las = 1)
+summary(framing$educ) / nrow(framing) * 100
+```
+
+
+#### Income
+
+Subjects income is normally distributed.
+
+```{r}
+hist(framing$income)
+```
+
+
+#### Emotional response
+
+The emotional response to the experiment is roughly evenly distrubuted among subjects, but skews towards negative emotional response. (3 indicates the most negative feeling)
+
+```{r}
+barplot(table(framing$emo))
+```
+
+#### Percieved harm caused by immigration
+
+Most subjects percieve harm caused by immigration as high.
+
+```{r}
+barplot(table(framing$p_harm))
+```
+
+
+#### Request for information from anti-immigration organizations
+
+11% of subjects wanted to receive information from anti-immigration organizations.
+
+```{r}
+summary(framing$anti_info) / nrow(framing)
+```
+
+
+#### Request to send message to Congress
+
+33% of subjects requested sending an anti-immigration message to Congress on their behalf.
+
+```{r}
+summary(framing$cong_mesg) / nrow(framing)
+```
+
+#### Making English the official language of USA
+
+Somewhat surprisingly (considering majority of subjects were opposed to immigration), a majority of subjects strongly oppose a law making English the official language of the U.S.
+
+
+```{r}
+summary(framing$english) / nrow(framing) * 100
+barplot(summary(framing$english) / nrow(framing) * 100)
+```
+ 
+## Group analysis
+
+We continue with basic exploration of relationships between variables
+
+#### Percieved harm
+
+Percieved harm by immigration broken down by study conditions. We see that negative news coverage leads to higher percieved harm caused by immigration. Latino etnicity clues make the effect stronger. Curiously, latino ethnicity cues lead to less percieved harm with positive news than european etnicity clues.
+
+```{r}
+tapply(framing$p_harm, framing$cond, FUN=mean)
+# tapply(framing$p_harm, framing$treat, FUN=mean)
+```
+
+#### Anxiety
+
+Anxiety about immigration broken down by study conditions. Contrary to expectations, according to our dataset, negative news coverage leads to less anxiety than positve news coverage. This contradicts the underlying study and could indicate that the values in our dataset are incorrectly coded or desribed.
+
+```{r}
+tapply(as.numeric(framing$anx), framing$cond, FUN=mean)
+# tapply(as.numeric(framing$anx), framing$treat, FUN=mean)
+```
+
+#### Attitude to immigration
+
+Attitude to immigration broken down by anxiety levels. The association runs in the opposite direction than expected.
+
+```{r}
+tapply(framing$immigr, framing$anx, FUN=mean)
+```
+
+Attitude toward immigration broken down by study conditions. Larger is more negative (according to the dictionary). This association runs as expected.
+
+```{r}
+tapply(framing$immigr, framing$cond, FUN=mean)
+```
+
+
+## Demographic correlations with attitude to immigration
+
+Let's use visualization to explore the relationships between demographic variables and negative attitude to immigration.
+
+```{r}
+# install.packages("ggplot2", repos = "http://cran.us.r-project.org")
+library(ggplot2)
+```
+
+### Gender
+
+There is a slight gender effect present. Majority of people with positive attitude to immigration are women. People with negative attitude to immigration are more evenly split, with men taking a slight majority.
+
+```{r}
+genderB <- ggplot(framing, aes(x = immigr_binary, fill = gender)) + 
+          geom_bar(position = "dodge") +
+          scale_fill_brewer(palette = 2, type = "qual")
+
+genderB
+```
+
+### Education level
+
+As the subjects' education level increases, they are less likely to have a negative attitude to immigration.
+
+```{r}
+educB <- ggplot(framing, aes(x = educ, fill = immigr_binary)) + 
+          geom_bar(position = "dodge") +
+          scale_fill_brewer(palette = 2, type = "qual")
+
+educB
+```
+### Study condition 
+
+We see that negative news coverage leads to more negative attitude to immigration. Latino etnicity clues make the effect stronger. Curiously, latino ethnicity cues lead to less negative attitude with positive news than european etnicity clues.
+
+
+```{r}
+condB <- ggplot(framing, aes(x = cond, fill = immigr_binary)) + 
+          geom_bar(position = "dodge") +
+          scale_fill_brewer(palette = 2, type = "qual")
+
+condB
+```
+
+### Age
+
+There isn't a clear linear relationsip between age and negative attitude to immigration. There is slight bend toward positivity at very young and very old age. There are slight local maximums of negative attitude around age 35 and 60.
+
+```{r}
+ggplot(framing, aes(x = age, y = immigr)) +
+    geom_point() +               # a layer of points
+    geom_smooth()               # add a fitted line; try also: method = "lm") 
+```
+
+# Income
+
+At the low end of the income distrubution, we can observe an almost linear relationship between income and negative attitude. This effect levels off at some point. We can observe two small local maximums of negative attitude that are similar in shape to the age curve. 
+
+```{r}
+ggplot(framing, aes(x = income, y = immigr)) +
+    geom_point() +               # a layer of points
+    geom_smooth()               # add a fitted line; try also: method = "lm") 
+```
+
+
+## Correlation matrices
+
+We use correlation matrices to explore relationships between variables further.
+
+```{r install required packages}
+#Install required packages
+# install.packages("corrplot", repos="http://cran.us.r-project.org")
+# install.packages("gplots",repos="http://cran.us.r-project.org")
+library(corrplot)
+library(gplots)
+```
+
+Preparing data for analysis:
+
+```{r}
+# Flip emo so that higher values signal more negative attitude (as with other variables)
+framing$emo = framing$emo * (-1)
+
+# Convert factors back into integers
+framing$anx = as.integer(framing$anx)
+framing$english = as.integer(framing$english)
+framing$cong_mesg = as.integer(framing$cong_mesg) -1 
+framing$anti_info = as.integer(framing$anti_info) -1 
+```
+
+Starting with a simple correlation matrix of `p_harm`, `immigr` and `anx`. Intuitively, one would expect all of them to be positively correlated, but anxiety seemms to run in the opposite direction. There is -0.46 negative correlation between anxiety about immigration and negative attitude to immigration. There is -0.62 negative correlation between anxiety about immigration and perceived harm of immigration. Again, this could caused by a wrong encoding of the data.
+
+```{r}
+# p_harm, immigr and anxiety correlation matrix
+corrplot.mixed(corr=cor(framing[ ,c(3,9,14)]), upper="ellipse")
+
+```
+
+Furthermore, we look at correlations of all "attitude" related variables expecting them to be largely positively correlated. This is not the case.  We were not able to find a reasonable explanation for these results.
+
+```{r}
+corrplot.mixed(corr=cor(framing[ ,c(3,8,9,13:16)]), upper="ellipse")
+```
+
+# Modeling and prediction
+
+Installing the required packages:
+
+```{r}
+# packages
+options(repos=c(CRAN = "http://cran.us.r-project.org"))
+# ROC AUC
+# install.packages('pROC')
+library(pROC)
+# building decision trees
+# install.packages("rpart")
+library(rpart)
+# plotting
+# install.packages("rpart.plot")
+library(rpart.plot)
+
+```
+
+
+## Splittin data and preparation
+
+```{r}
+# splitting the data into train and test
+set.seed(777)
+train.Index <- sample(1:nrow(framing), round(0.7*nrow(framing)), replace = F)
+framing.train <- framing[train.Index,]
+framing.test <- framing[-train.Index,]
+
+
+# convert to numbers for calculations
+framing.test$immigr_binary = as.integer(framing.test$immigr_binary) - 1
+framing.train$immigr_binary = as.integer(framing.train$immigr_binary) - 1
+
+
+# features to be used for model training
+features <- c('cond', 'anx', 'age', 'educ', 'gender', 'income', 'emo', 'p_harm',
+'tone', 'eth', 'english', 'anti_info', 'cong_mesg', 'immigr_binary')
+```
+
+
+
+## Creating a baseline prediction
+
+We create a naive baseline prediction based on probability of a negative attitude to immigration. We calculate its area under curve (AUC) and root mean square error (RMSE). This is the benchmark that our models have to surpass (RMSE = 0.45, AUC = 0.5)
+ 
+```{r}
+baseline_probability <- sum(framing.train$immigr_binary == 1)/nrow(framing.train)
+pred.baseline <- rep(baseline_probability, nrow(framing.test))
+
+# Calculating RMSE
+( rmse.naive <- sqrt(mean((framing.test$immigr_binary - pred.baseline)^2)) )
+
+# Calculating Area under curve
+auc(framing.test$immigr_binary, pred.baseline)
+
+```
+
+
+## Decision Tree model
+
+We start by creating a decision tree model (with default parameters) for predicting negative attitude to immigration.
+
+```{r}
+
+# Training classification decision tree
+dt <- rpart(immigr_binary ~ ., data = framing.train[,features], method = "class")
+
+# Predicting the instance of negative attitude to immigration
+# first column - probability of 0 for each observation
+# second column - probability of 1
+pred.dt <-predict(dt, newdata = framing.test, type = "prob")[,2]
+
+
+# Calculate performance with AUC
+auc(framing.test$immigr_binary, pred.dt)
+
+# Calculate performance with RMSE
+( rmse.dt <- sqrt(mean((framing.test$immigr_binary - pred.dt)^2)) )
+```
+
+Visualizing the decision tree:
+
+```{r}
+# Visualizing the results from "dt" using the prp() function
+prp(dt, extra = 104, border.col = 0, box.palette="auto", roundint=FALSE) # Print the percentage of observations and cla
+```
+
+## Finding the best parameters for the decision tree
+
+We loop over possible parameter values to find a combination that performs the best.
+
+```{r}
+parameter_values <- expand.grid("cp" = seq(0.00, 0.02, by = 0.005), 
+                                "minsplit" = seq(10, 50, by = 5))
+num_folds <- 5
+
+
+# Vector to store results (i.e., performance estimates per CV iteration)
+cv_results <- matrix(nrow = nrow(parameter_values), ncol = num_folds)
+
+# Create k folds of approximately equal size
+folds <- cut(1:nrow(framing.train), breaks = num_folds, labels = F)
+
+
+for (i in 1:num_folds) {
+  
+  print(paste0(i, "/", num_folds))
+  
+  idx_val <- which(folds == i)
+  cv_train <- framing.train[-idx_val,]
+  cv_valid <- framing.train[ idx_val,]
+  
+  for (j in 1:nrow(parameter_values)) {
+    dt <- rpart(immigr_binary ~ ., data = cv_train[, features], method = "class",
+                cp = parameter_values$cp[j],
+                minsplit = parameter_values$minsplit[j])
+    
+    pred.dt <- predict(dt, newdata = cv_valid, type = "prob")[,2]
+    
+    cv_results[j, i] <- auc(cv_valid$immigr_binary, pred.dt, quiet = T)
+    }
+}
+```
+
+We find the best combination based on average AUC. The winning parameters are a `cp` of 0 and minimum split of 25.
+
+```{r}
+parameter_values$mean_auc <- apply(cv_results, 1, mean)
+parameter_values[order(parameter_values$mean_auc), ]
+
+parameter_values[which.max(parameter_values$mean_auc), ]
+
+```
+
+Training the model with the chosen parameters:
+
+```{r}
+dt2 <- rpart(immigr_binary ~ ., data = framing.train[, features], method = "class",
+            cp = parameter_values$cp[which.max(parameter_values$mean_auc)],
+            minsplit = parameter_values$minsplit[which.max(parameter_values$mean_auc)])
+
+pred.dt2 <- predict(dt, newdata = framing.test, type = "prob")[,2]
+```
+
+Calculating AUC and RMSE:
+
+```{r}
+auc(framing.test$immigr_binary, pred.dt2, quiet = T)
+( rmse.dt <- sqrt(mean((framing.test$immigr_binary - pred.dt2)^2)) )
+```
+
+
+
+ Area under curve increased from 0.71 (default parameters) to 0.76.
+ RMSE decreased from  0.42 to 0.42. Setting optimal DT parameters lead to a modest increase in the effectiveness of the model.
+ 
+Listing factors by importance:
+
+```{r}
+as.matrix(dt$variable.importance, ncol = 1)
+```
+ 
+Visualizing the final tree. It is actually much simpler, featuring only two branching conditions.
+
+```{r}
+prp(dt2, extra = 104, border.col = 0, box.palette="auto", roundint=FALSE) 
+```
+
+## Logistic regression model
+
+Installing required packages:
+
+```{r}
+# stargazer for nice tables
+# install.packages("stargazer", repos = "http://cran.us.r-project.org") 
+library(stargazer)
+```
+
+Training the model:
+
+```{r}
+log1 <- glm(immigr_binary ~ ., data = framing.train[, features],
+        family = binomial(link = "logit"))
+
+
+stargazer(log1, type = "text")
+```
+
+Making predictions and visualizing them:
+
+```{r}
+pred.log1 <- predict(log1, newdata = framing.test, type = "response")
+par(mfrow = c(1,1))
+plot(pred.log1)
+```
+
+Evaluating the model using RMSE and AUC:
+
+
+```{r}
+auc(framing.test$immigr_binary, pred.log1)
+( rmse.log <- sqrt(mean((framing.test$immigr_binary - pred.log1)^2)) )
+```
+
+The logistic regresion beats the decision tree model. (AUC: 0.89 > 0.76, RMSE 0.35 < 0.41)
+ 
