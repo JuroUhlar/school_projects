@@ -1,9 +1,9 @@
 -- List for a client request the facilities of the selected accommodation 
 
-DECLARE @Selected_accomodation_id int = 15
+DECLARE @Selected_accomodation_id int = 10
 
-SELECT   Accommodations.id, Types.name AS Type, Facilities.name AS Facility
+SELECT   Accommodations.accommodation_id, Types.name AS Type, Facilities.name AS Facility
 FROM         Accommodations INNER JOIN
-                         Types ON dbo.Accommodations.typeID = Types.id INNER JOIN
-                         Facilities ON Types.id = Facilities.typeID
-WHERE     (Accommodations.id = @Selected_accomodation_id)
+                         Types ON dbo.Accommodations.type_ID = Types.type_id INNER JOIN
+                         Facilities ON Types.type_id = Facilities.type_ID
+WHERE     (Accommodations.accommodation_id = @Selected_accomodation_id)
