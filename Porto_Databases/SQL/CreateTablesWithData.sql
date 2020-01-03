@@ -1,3 +1,4 @@
+USE hotels
 
 -- HOTELS
 CREATE TABLE Hotels (
@@ -84,7 +85,9 @@ CREATE TABLE Orders(
 
 INSERT INTO Orders(id, customerID, start_date, end_date, state) VALUES 
 (1, 1, '2019-11-11', '2019-11-13', 'recieved'),
-(2, 3, '2019-12-2', '2019-12-3', 'recieved');
+(2, 3, '2019-12-2', '2019-12-3', 'recieved'),
+(3, 5, '2019-10-2', '2019-10-3', 'recieved'),
+(4, 7, '2019-9-2', '2019-9-3', 'recieved');
 
 -- ACCOMMODATIONS
 CREATE TABLE Accommodations(
@@ -110,3 +113,31 @@ INSERT INTO Accommodations(id, hotelID, typeID, capacity) VALUES
 (13, 3, 2, 2),
 (14, 3, 2, 2),
 (15, 3, 3, 4);
+
+--ORDER_ACCOMMODATION
+CREATE TABLE Order_Accommodation(
+	id int NOT NULL PRIMARY KEY,
+	ordersID int NOT NULL FOREIGN KEY REFERENCES Orders(id),
+	accommodationsID int NOT NULL FOREIGN KEY REFERENCES Accommodations(id),
+	guest_count int NOT NULL)
+
+ INSERT INTO Order_Accommodation(id,ordersID,accommodationsID,guest_count) VALUES
+ (1,1,1,1),
+ (2,2,4,2),
+ (3,3,5,3),
+ (4,4,6,1);
+
+ --DAILY_CONSUMPTION
+CREATE TABLE Daily_consumption(
+	order_accommodation_ID int NOT NULL FOREIGN KEY REFERENCES Order_Accommodation(id),
+	consumtion_date date,
+	snacks_consumed int CHECK (snacks_consumed >= 0),
+	drinks_consumed int CHECK (drinks_consumed >= 0),
+	tv_consumed int CHECK (tv_consumed >= 0)
+
+ INSERT INTO Daily_consumption(id, consumtion_date, snacks_consumed, drinks_consumed, tv_consumed) VALUES
+ (1, '2019-11-11', 0, 2, 3),
+ (2, '2019-12-2', 1, 22, 0),
+ (3, '2019-10-2', 3, 5, 8),
+ (4, '2019-9-2', 13, 9, 3);
+
